@@ -1,0 +1,259 @@
+---
+title: "Praxis R Session 1"
+author: "Salem Marrero"
+output: html_document
+---
+
+##Setting Up R
+
+This is meant to serve as an introduction to R for those who have little to no prior experience writing code or programming. 
+
+First we must download R [here](https://cran.r-project.org/bin/macosx/) for Mac and [here](https://cran.r-project.org/bin/windows/base/) for PC. This will install the programming language itself onto your machine. However, the only way you can interact with it at this point is through the console, which is difficult. Instead we will use an application called R Studio, which can be downloaded [here](https://www.rstudio.com/products/rstudio/download/) for Mac and PC. R Studio acts as an intuitive interface for R. 
+
+Now we will write our first line of code:
+
+```{r, echo = TRUE}
+print("Hello World")
+```
+
+That's pretty boring and not very useful. R is a language designed for statistical analysis. Let's take a look at a dataset.
+
+```{r, echo = TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+install.packages("Lahman") #This is a comment since it's after a "#"! Installing a package does not make it so you can use it!
+```
+
+
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+library(Lahman) #This actually makes it so you can use the Lahman dataset! Note that there are no quotes this time!
+```
+
+
+##The Lahman Dataset
+
+What do we know about the Lahman dataset? Likely nothing, so let's find out. 
+
+```{r, echo=TRUE}
+?Lahman
+```
+
+
+One of the most fantastic functionalities of R is the ability to just ask it what something is by preceding it with a question mark. The above code, shows us the documentation for the Lahman package in R. This also works for functions:
+
+```{r, echo = TRUE}
+?summary
+```
+
+The summary function will give a brief statistical summary of any dataframe or vector input. A vector is a series of values and a dataframe is a table like an excel sheet.
+
+```{r, echo = TRUE}
+vectorTest <- c(1:100)
+summary(vectorTest)
+```
+
+This is a pretty boring piece of data. It's just the numbers 1 to 100. Let's try it on something more interesting.
+
+```{r, echo = TRUE}
+summary(Batting)
+```
+
+Oh boy. That's a lot. What does it tell us? Each set of summaries tells us a bit about the associated column of the __Batting__ table in the Lahman database. This contains summary data for every player that played in the MLB from 1874 to 2014.
+
+Let's clean up the database really quick:
+
+```{r, echo = TRUE}
+batting <- Batting[complete.cases(Batting),]#complete.cases removes rows with NAs!
+```
+
+
+Well the first thing to do here is find out who the best players ever were, right?
+
+```{r, echo = TRUE}
+batting[which(batting$HR == max(batting$HR)),]
+```
+
+```{r, echo = TRUE}
+batting[which(batting$BB == max(batting$BB)),]
+```
+
+Looks like Barry Bonds was the greatest player ever. Pack it up boys. 
+
+But what about batting average? We don't see that here, and it's such an important statistic!
+
+Well we can add it to the dataset!
+
+```{r, echo = TRUE}
+colnames(batting)
+batting$AVG <- batting$H/batting$AB
+batting <- batting[complete.cases(batting),]
+colnames(batting)
+```
+
+Hey! Our new statistic was added to the dataset! Now let's find out who really was the best player ever!
+
+```{r, echo = TRUE}
+head(batting[which(batting$AVG == max(batting$AVG)),],10)
+```
+
+Huh a bunch of random dudes from the 50s that I haven't heard of are the best ever. 
+
+Well getting one hit in one AB or two hits in two ABs isn't too impressive. We need only the players that had enough ABs to count. The MLB defined a "qualified hitter" as a hitter who had at least 3 ABs for each game over the course of the season, or 162*3.1, which is 502.2. So we'll select only hitters who had at least 486 ABs in that year! For this, we'll make a new dataframe!
+
+```{r, echo = TRUE}
+batting_qualified <- batting[which(batting$AB >= 502.2),]
+nrow(batting)
+nrow(batting_qualified)
+```
+
+That shrunk the database by quite a bit! But it makes sense. Most players don't bat a ton every day and a lot of players who do get injured and face half-seasons. Now, let's find out who was the greatest player ever!
+
+```{r, echo = TRUE}
+batting_qualified[which(batting_qualified$AVG == max(batting_qualified$AVG)),]
+```
+
+
+You may be thinking "Hey! Hugh Duffey of the 1894 Boston Beaneaters hit .440 and had 539 ABs! What gives? Rad Carew only hit .388!". But when we removed NAs from the table it removed a lot of deadball era statistics. In fact, we removed all records before 1955! So be careful when cleaning up your databases. You may not always want to remove all rows with NAs. 
+
+Also, you may be wondering what's going on inside the brackets. The which function finds the indices where the expression inside of it evaluated to TRUE. In __batting_qualified$AVG == max(batting_qualified$AVG)__, we're taking the column __AVG__ from the dataframe __batting_qualified__ and finding where it matches the maximum value of said column. At the end we have a comma indicating that we want the rows, because inside the brackets, a dataframe can be accessed by [row,column] as such:
+
+```{r, echo = TRUE}
+batting_qualified[1,1]
+```
+
+Hank Aaron is the top player in our dataset. This is because the database is sorted by their Lahman ID. 
+
+Now back to our question of the greatest hitter ever, we've only been looking at a single season of data for our answers. So we haven't been answering "Who's the greatest hitter ever?" but "Who's the greatest hitter in a single season?". For this we need to aggregate from our original table. 
+
+```{r, echo = TRUE}
+#to aggregate, our dataframe must be only numeric values, other than the field we are aggregating by
+Batting1 <- batting #making a copy of Batting
+Batting1$teamID <- NULL #removes the column "teamID"
+Batting1$lgID <- NULL #removes the column "lgID"
+Batting1$yearID <- NULL #removes the column "yearID"
+Batting1$playerID <- NULL #removes the column "playerID"
+batting_aggregate <- aggregate(Batting1, by = list(batting$playerID), FUN = "sum")
+row.names(batting_aggregate) <- NULL
+colnames(batting_aggregate)[1] <- "playerID"
+head(batting_aggregate)
+rm(Batting1)
+```
+
+Uh oh. These batting averages seem a bit high. The aggregate function applies the same function to all columns. All the ones in the original Lahman database were counts, but AVG is a rate. We'll need to redefine it like we did last time. 
+
+```{r, echo = TRUE}
+batting_aggregate$AVG <- batting_aggregate$H/batting_aggregate$AB
+head(batting_aggregate)
+```
+
+Much better. Now. Who was the greatest player of all time. Let's check our three statistics again. 
+
+```{r, echo = TRUE}
+batting_aggregate[which(batting_aggregate$HR == max(batting_aggregate$HR)),]
+
+batting_aggregate[which(batting_aggregate$BB == max(batting_aggregate$BB)),]
+```
+
+Looks like not much has changed yet. Bonds is still killer. 
+
+```{r, echo = TRUE}
+head(batting_aggregate[which(batting_aggregate$AVG == max(batting_aggregate$AVG)),])
+```
+
+Uh oh. We forgot about sample size again! Let's make another subset!
+
+```{r, echo = TRUE}
+qualified_aggregate <- batting_aggregate[which(batting_aggregate$AB>2000),]
+qualified_aggregate[which(qualified_aggregate$AVG == max(qualified_aggregate$AVG)),]
+```
+
+Tony Gwynn is the batting champion! We can also add other rate statistics, like OBP, SLG, and OPS as well as other counting statistics, like PA and TB. 
+
+```{r, echo = TRUE}
+qualified_aggregate$PA <- qualified_aggregate$AB + qualified_aggregate$BB + qualified_aggregate$SH
+
+qualified_aggregate$TB <- (qualified_aggregate$H - (qualified_aggregate$X2B + qualified_aggregate$X3B + qualified_aggregate$HR)) + 2*qualified_aggregate$X2B + 3*qualified_aggregate$X3B + 4*qualified_aggregate$HR
+
+qualified_aggregate$OBP <- (qualified_aggregate$H + qualified_aggregate$BB + qualified_aggregate$HBP)/(qualified_aggregate$AB + qualified_aggregate$BB + qualified_aggregate$HBP + qualified_aggregate$SH)
+
+qualified_aggregate$SLG <- qualified_aggregate$TB/qualified_aggregate$PA
+
+qualified_aggregate$OPS <- qualified_aggregate$OBP + qualified_aggregate$SLG
+```
+
+Suppose instead of the single best player, we want to see the top 10 of a bunch of categories. We'd want to reorder the dataframe. 
+
+```{r, echo = TRUE}
+head(qualified_aggregate[order(-qualified_aggregate$TB),],10)[,c("playerID", "TB")]
+head(qualified_aggregate[order(-qualified_aggregate$OPS),],10)[,c("playerID", "OPS")]
+head(qualified_aggregate[order(-qualified_aggregate$SB),],10)[,c("playerID", "SB")]
+```
+
+
+Just how much better at stealing bases was Ricky Henderson than everyone else? We can fins out how many standard deviations he was from the mean:
+
+```{r, echo = TRUE}
+(max(qualified_aggregate$SB) - mean(qualified_aggregate$SB))/sd(qualified_aggregate$SB)
+```
+
+11 Standard deviations. That's ridiculous. Though counting stats aren't best looked at through standard deviations. And to me, it doesn't pop out and show how incredible he was. Instead, let's take a visual look. 
+
+```{r, echo = TRUE}
+hist(qualified_aggregate$SB, main = "Histogram of Total Stolen Bases for Qualified Hitters", xlab = "SB")
+```
+
+Well that doesn't tell you much. You can't even see Henderson! Let's add more columns
+
+```{r, echo = TRUE}
+hist(qualified_aggregate$SB, breaks = 100, main = "Histogram of Total Stolen Bases for Qualified Hitters", xlab = "SB")
+```
+
+You can kind of see his bump waaaayyyyy down on the right, but not very well. Histograms are nice for displaying normal data, but not for showing outliers. 
+
+```{r, echo = TRUE}
+boxplot(qualified_aggregate$SB, data = qualified_aggregate, horizontal = TRUE, main = "Boxplot of SB by Qualified Hitters")
+```
+
+Incredible. But even if his outlier of a career wasn't obvious by now, let's compare SB and PA 
+
+```{r, echo = TRUE}
+plot(qualified_aggregate$PA, qualified_aggregate$SB, pch = "+", main = "Scatterplot of PA and SB",
+     xlab = "PA", ylab = "SB")
+points(qualified_aggregate$PA[which(qualified_aggregate$SB == max(qualified_aggregate$SB))], 
+       qualified_aggregate$SB[which(qualified_aggregate$SB == max(qualified_aggregate$SB))], 
+       pch = "+", col = "red")
+abline(lm(qualified_aggregate$SB ~ qualified_aggregate$PA), col = "blue")
+```
+
+See that little red cross? That's Ricky Henderson. 
+
+What about a pie chart?
+
+```{r}
+plot.new()
+text(.5,.5,labels = "DO NOT USE\n PIE CHARTS \n THEY ARE BAD", cex = 3, col = "red")
+```
+
+Last major topic for today is reading in data. For this, we'll be using batting data from fangraphs.com, a baseball analytic website. 
+
+```{r}
+fangraphs <- read.csv("~/Desktop/batting.csv")
+fangraphs$Hard. <- as.numeric(substr(fangraphs$Hard., 1, 4))
+fangraphs$Oppo. <- as.numeric(substr(fangraphs$Oppo., 1,4))
+```
+
+This contains year by year data for every major league hitter since 2002. We can use this find similar statistics as with the Lahman database. 
+
+```{r,warnings = FALSE, messages = FALSE}
+attach(fangraphs)
+fangraphs$ballsInPlay <- GB + FB + IFFB + LD
+attach(fangraphs)
+fangraphs$xBABIP <- .1975 - .4383*IFFB/ballsInPlay -.0914*FB/ballsInPlay + 
+  .2594*LD/ballsInPlay +.001822*Hard. + .001198*Oppo. +.0042*Spd
+attach(fangraphs)
+fangraphs$BABIP_luck <- BABIP - xBABIP
+detach(fangraphs)
+fangraphs_qualified <- fangraphs[which(fangraphs$PA > 500),]
+head(fangraphs_qualified[order(-fangraphs_qualified$BABIP_luck),]
+     [,c("Season","Name", "ballsInPlay", "BABIP", "xBABIP", "BABIP_luck")])
+```
+
+
