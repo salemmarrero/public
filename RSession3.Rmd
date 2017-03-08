@@ -1,31 +1,41 @@
 ---
-title: "Untitled"
-author: "Salem Marrero"
-date: "3/7/2017"
+title: "Praxis RMarkdown Intro"
 output: html_document
 ---
 
 ![](https://upload.wikimedia.org/wikipedia/en/0/0a/Praxis,_break_the_mold_logo,_vertical.jpg)
 
+###[Cheatsheet Here!](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
 
-[](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+```{r, eval = FALSE, echo = FALSE, warning=FALSE}
+#install.packages("ggplot2")
+```
 
-install.packages("ggplot2")
+
+```{r, eval = TRUE, echo = FALSE, warning=FALSE}
 library(ggplot2)
+```
+
+##Making Our First Graphs!
+
+```{r, eval = TRUE, echo = FALSE}
+ggplot(data = diamonds, aes(cut)) + geom_bar(aes(fill = cut)) + ggtitle("Cuts of Diamonds")
+
+ggplot(data = diamonds, aes(cut)) + geom_bar(aes(fill = cut)) +
+  coord_polar() + ggtitle("Cuts of Diamonds \n But It Looks Awful")
+```
 
 
+##Modeling Price from Carat!
 
-ggplot(data = diamonds, aes(cut)) + geom_bar(aes(fill = cut))
-
-ggplot(data = diamonds, aes(cut)) + geom_bar(aes(fill = cut)) + coord_polar()
-
-
-
-####
+```{r}
 model_diamonds <- lm(price ~ carat, data = diamonds)
-
 diamonds$fitted <- model_diamonds$fitted
+```
 
+Our Model is: $Price = -2256 + 7756*carat$
+
+```{r, warning=FALSE}
 pretty_scatter_plot <- ggplot(data = diamonds, aes(x = carat, y = price)) + 
   geom_point(alpha = .15) + 
   geom_line(aes(y = fitted), col = "red") +
@@ -33,45 +43,47 @@ pretty_scatter_plot <- ggplot(data = diamonds, aes(x = carat, y = price)) +
   scale_x_continuous(limits = c(0,3)) +
   ggtitle("Relationship between carat and price of diamond") +
   ylab("Price (Dollars)")
-
 pretty_scatter_plot
+```
 
-######
+
+###Other ways to visualize our model!
+
+```{r}
 g <- ggplot(diamonds, aes(x = cut, y = price, fill = cut))
+```
 
-## jittering the points helps prevent overplotting
+#### jittering plot
+
+```{r}
 g + geom_jitter()
+```
 
-## box and whiskers plot
+#### box and whiskers plot
+
+```{r}
 g + geom_boxplot()
+```
 
-## a fancier version of the boxplot, which shows the whole distribution,
-## not just quantiles
+#### violin plot
+
+```{r}
 g + geom_violin()
-
-#####
-
-
-ggplot(data = diamonds, aes(x = price)) +
-  geom_histogram(bins = 100, fill = "red")
+```
 
 
-ggplot(data = diamonds, aes(x = price)) +
-  geom_histogram(bins = 100, fill = "blue") + scale_x_log10()
+##Other Relationships in the data!
 
-
-
-
-
-
-#color v cost
+####color v cost
+```{r}
 ggplot(diamonds, aes(x = color, y = price)) + geom_violin()
-
+```
 
 
 #multi dimensional data
+```{r, fig.width=800, fig.height = 800}
 ggplot(diamonds, aes(x = carat, y = price, color = color, shape = cut)) + geom_point(alpha = .9) + 
-  scale_y_continuous(limits = c(0,20000))
-
+  scale_y_continuous(limits = c(0,20000)) + ggtitle("Our Gorgeous Graph!")
+```
 
 
