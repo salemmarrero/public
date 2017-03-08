@@ -1,0 +1,77 @@
+---
+title: "Untitled"
+author: "Salem Marrero"
+date: "3/7/2017"
+output: html_document
+---
+
+![](https://upload.wikimedia.org/wikipedia/en/0/0a/Praxis,_break_the_mold_logo,_vertical.jpg)
+
+
+[](https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+
+install.packages("ggplot2")
+library(ggplot2)
+
+
+
+ggplot(data = diamonds, aes(cut)) + geom_bar(aes(fill = cut))
+
+ggplot(data = diamonds, aes(cut)) + geom_bar(aes(fill = cut)) + coord_polar()
+
+
+
+####
+model_diamonds <- lm(price ~ carat, data = diamonds)
+
+diamonds$fitted <- model_diamonds$fitted
+
+pretty_scatter_plot <- ggplot(data = diamonds, aes(x = carat, y = price)) + 
+  geom_point(alpha = .15) + 
+  geom_line(aes(y = fitted), col = "red") +
+  scale_y_continuous(limits = c(0, 20000)) +
+  scale_x_continuous(limits = c(0,3)) +
+  ggtitle("Relationship between carat and price of diamond") +
+  ylab("Price (Dollars)")
+
+pretty_scatter_plot
+
+######
+g <- ggplot(diamonds, aes(x = cut, y = price, fill = cut))
+
+## jittering the points helps prevent overplotting
+g + geom_jitter()
+
+## box and whiskers plot
+g + geom_boxplot()
+
+## a fancier version of the boxplot, which shows the whole distribution,
+## not just quantiles
+g + geom_violin()
+
+#####
+
+
+ggplot(data = diamonds, aes(x = price)) +
+  geom_histogram(bins = 100, fill = "red")
+
+
+ggplot(data = diamonds, aes(x = price)) +
+  geom_histogram(bins = 100, fill = "blue") + scale_x_log10()
+
+
+
+
+
+
+#color v cost
+ggplot(diamonds, aes(x = color, y = price)) + geom_violin()
+
+
+
+#multi dimensional data
+ggplot(diamonds, aes(x = carat, y = price, color = color, shape = cut)) + geom_point(alpha = .9) + 
+  scale_y_continuous(limits = c(0,20000))
+
+
+

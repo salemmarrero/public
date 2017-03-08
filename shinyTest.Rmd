@@ -1,0 +1,31 @@
+---
+title: "shinyTest"
+author: "Salem Marrero"
+output: html_document
+runtime: shiny
+---
+
+
+```{r, echo=FALSE}
+library(ggplot2)
+inputPanel(
+  selectInput("x_lab", label = "X",
+              choices = c("carat", "depth", "table", "price", "x", "y", "z"), selected = "carat"),
+  
+  selectInput("y_lab", label = "Y",
+              choices = c("carat", "depth", "table", "price", "x", "y", "z"), selected = "price"),
+  
+  sliderInput("alpha", label = "Alpha Level",
+              min = 0, max = 1, value = 1, step = 0.05)
+)
+
+renderPlot({
+  ggplot(diamonds, aes(
+                         x = diamonds[paste(input$x_lab)], 
+                         y = diamonds[paste(input$y_lab)] 
+                     ) 
+        ) + 
+        geom_point(alpha = input$alpha) +
+        xlab(input$x_lab) + ylab(input$y_lab)
+  })
+```
