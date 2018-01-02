@@ -1,0 +1,200 @@
+Best Practices
+
+ - Do
+ 	- Be consistent
+	- Format your SQL to be readable -- write once, read many times
+	- Favor simplicity and performance over cleverness and expediency
+	- Comment non-obvious code
+ - Don't
+ 	- Use reserved keywords as variables
+	- Commit untested DDL
+	- Commit unprofiled DML
+	- Assume you are the only one maintaining this SQL
+	- Maintain production-use SQL outside of repositories
+
+General Style Guidelines
+	- Do not use reserved keywords
+	- Use snake_case over CamelCase
+	- Capitalize keywords
+
+Tables
+	- Singular table names
+		GOOD: my_schema.member
+		BAD: my_schema.members
+	- Only lowercase
+	- Do not encode environment- or use-specific data in the table name
+		GOOD: my_schema.member
+		BAD: my_schema.member_bld_stage
+
+Columns
+	- Singular column names
+	- If a serial key is used, it should be named with table name + "_key", e.g., "member_key" ("_id" is also acceptable if this is established convention)
+	- Multiple values of a field, if not normalized, should be numbered with "_1", "_2", "_3", etc., starting with 1, e.g., cd_1, cd_2, cd_3
+	- Use expressive column names
+	Data Warehouse:
+	- Adhere to the following convention for scalar fact columns:
+		- _amt: Numeric values, usually currency, that can be operated on acontextually
+		- _flg: Boolean value, stored as an integer, with 1 and 0 corresponding to true and false, respectively
+		- _pct: Decimal value representing a percentage that should not be summed
+		- _cnt: Integer value representing a count-based measure that can be operated on acontextually
+	- Adhere to the following convention for vector fact values:
+		- _key: Integer value that is a foreign key to a dimension table
+
+DML
+	- General
+		- When more than one schema is being used, fully qualify table names:
+			my_schema.my_table
+		- Table aliases should be indicative of the table and follow a standard convention
+			GOOD: fact.md_claim_detail AS fmcd
+			ALSO GOOD: fact.md_claim_detail AS med
+			BAD: fact.md_claim_detail AS a
+		- Embedded SQL should not end with a semicolon
+	- SELECT
+		- DISTINCT modifies SELECT -- keep it on the same line
+		- Column list
+			- Single-column result sets do not need a line break
+				SELECT foo FROM my_schema.my_table
+			- Multi-column result sets
+				- One field per line:
+				- Indented one level from SELECT
+				- Listed with leading commas
+				SELECT
+					  foo
+					, bar
+					, baz
+					, bat
+				FROM my_schema.my_table
+			- Complex keywords (CASE, etc.) should start at the same indentation level, with internal blocks indented one level:
+				SELECT
+					  bar
+					, CASE foo
+					WHEN 'bar' THEN 'quux'
+					WHEN 'baz' THEN 'quum'
+					ELSE 'xyzzy'
+					END
+				FROM my_schema.my_table
+		- Joins
+			- JOIN is on same indentation level as FROM:
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				LEFT JOIN my_schema.my_other_table AS mot
+					ON(mt.baz = mot.baz)
+			- Predicates indented one level from JOIN
+			- Explicitly specify JOIN type, e.g., INNER JOIN vs. JOIN
+			- Include JOIN predicates immediately after JOIN statement, not in WHERE predicate:
+				GOOD: 
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				INNER JOIN my_schema.my_other_table AS mot
+					ON(mt.baz = mot.baz)
+				BAD:
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				INNER JOIN my_schema.my_other_table AS mot
+				WHERE mt.baz = mot.baz
+			- Join predicates should emply ON() in favor of USING()
+			- Join predicates should be enclosed in parentheses 
+				GOOD:
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				INNER JOIN my_schema.my_other_table AS mot
+					ON(mt.baz = mot.baz)
+				BAD:
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				INNER JOIN my_schema.my_other_table AS mot
+					ON mt.baz = mot.baz
+			- List complex join predicates one per line with leading boolean operator, block-indented
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				INNER JOIN my_schema.my_other_table AS mot
+					ON(
+						mt.baz = mot.baz
+						AND mt.bar = mot.bar
+					)
+		- Predicates
+			- List simple predicates one per line with leading boolean operator:
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				WHERE mt.baz = 7
+					AND mt.bar = 'Ninety-nine'
+			- Complex or sub-predicates should start with boolean operator, then a parentheses-enclosed, block-indented predicate clause
+				SELECT foo
+				FROM my_schema.my_table AS mt
+				WHERE mt.baz = 7
+				AND (
+					mt.bar = 'Ninety-nine'
+					OR mt.bat = 99
+				)
+			- Use IN() rather than blocks of OR when testing membership
+		- Subqueries
+			- Enclose in parentheses
+			- Subquery aliases should be indicative of the contents and follow a standard convention
+			- Block indent entire query
+				SELECT
+					  foo
+					, AVG(baz_cnt)
+				FROM (
+					SELECT
+						  foo
+						, COUNT(DISTINCT baz) AS baz_cnt
+					FROM my_schema.my_table
+					GROUP BY foo
+				) AS foo_baz_cnt
+		- Aggregation
+			- GROUP BY is on same indentation level as FROM
+			- Specify fully-qualified column names, not positional parameters
+				GOOD:
+				SELECT
+					  foo
+					, SUM(bar)
+				FROM my_schema.my_table
+				GROUP BY foo
+				BAD:
+				SELECT
+					  foo
+					, SUM(bar)
+				FROM my_schema.my_table
+				GROUP BY 1
+		- Ordering and Pagination
+			- ORDER BY is on same indentation level as FROM
+			- Specify fully-qualified column names, not positional parameters
+				GOOD:
+				SELECT
+					  foo
+					, bar
+				FROM my_schema.my_table
+				ORDER BY foo
+				BAD:
+				SELECT
+					  foo
+					, bar
+				FROM my_schema.my_table
+				ORDER BY 1
+	- UPDATE
+	- DELETE
+	- INSERT
+		- Always specify column names
+DDL
+	- General
+		- Do not use IF EXISTS or IF NOT EXISTS keywords on CREATE statements
+		- Do not include DROP statements in DDL
+		- Closing semicolon should be on a new line
+		- Open parentheses on CREATE, close on empty line TODO
+	- Keys
+		- Always define a primary key
+		- Primary key should be listed first
+	- Constraints
+	- Column List
+		- List primary key first
+		- When applicable, list natural keys after primary key
+		- Ensuing columns should be alphabetized
+		- Column type follows column name with one space
+		- Column Types
+			- Character
+				- VARCHAR rather than CHARACTER VARYING
+				- CHAR when column width will not vary (state, SSN, etc.) and VARCHAR when it may
+			- Integer
+				- INT or SMALLINT for compatibility with Redshift
+				- INT rather than INTEGER
+
